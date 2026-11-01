@@ -3,11 +3,11 @@ import { Link } from 'react-router-dom';
 import { MapPin, Calendar, Compass, Shield, Award, ArrowRight } from 'lucide-react';
 import api from '../api/client';
 import { useCart } from '../context/CartContext';
+import { fallbackAdventures, fallbackProducts } from '../data/fallbackData';
 
 const Home = () => {
-  const [adventures, setAdventures] = useState([]);
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [adventures, setAdventures] = useState(fallbackAdventures.slice(0, 3));
+  const [products, setProducts] = useState(fallbackProducts.slice(0, 4));
   const { addToCart } = useCart();
   const [addedId, setAddedId] = useState(null);
 
@@ -18,12 +18,14 @@ const Home = () => {
           api.get('/adventures'),
           api.get('/products')
         ]);
-        setAdventures(advRes.data.slice(0, 3));
-        setProducts(prodRes.data.slice(0, 4));
+        if (advRes.data && Array.isArray(advRes.data) && advRes.data.length > 0) {
+          setAdventures(advRes.data.slice(0, 3));
+        }
+        if (prodRes.data && Array.isArray(prodRes.data) && prodRes.data.length > 0) {
+          setProducts(prodRes.data.slice(0, 4));
+        }
       } catch (err) {
-        console.error('Error fetching home data:', err);
-      } finally {
-        setLoading(false);
+        console.warn('API unavailable, displaying fallback catalog:', err.message);
       }
     };
     fetchData();
@@ -67,37 +69,33 @@ const Home = () => {
           </Link>
         </div>
 
-        {loading ? (
-          <p>Loading adventures...</p>
-        ) : (
-          <div className="grid-3">
-            {adventures.map((adv) => (
-              <div key={adv._id} className="card">
-                <img src={adv.image} alt={adv.title} className="card-img" />
-                <div className="card-body">
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
-                    <span className="badge badge-info">{adv.sport}</span>
-                    <span className="badge badge-warning">{adv.difficulty}</span>
-                  </div>
-                  <h3 className="card-title">{adv.title}</h3>
-                  <div className="card-meta">
-                    <MapPin size={14} /> {adv.destination}
-                  </div>
-                  <div className="card-meta">
-                    <Calendar size={14} /> {adv.duration}
-                  </div>
-                  <p className="card-desc">{adv.description}</p>
-                  <div className="card-footer">
-                    <div className="price">₹{adv.price.toLocaleString()}</div>
-                    <Link to={`/adventures/${adv._id}`} className="btn btn-primary btn-sm">
-                      View Details
-                    </Link>
-                  </div>
+        <div className="grid-3">
+          {adventures.map((adv) => (
+            <div key={adv._id} className="card">
+              <img src={adv.image} alt={adv.title} className="card-img" />
+              <div className="card-body">
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <span className="badge badge-info">{adv.sport}</span>
+                  <span className="badge badge-warning">{adv.difficulty}</span>
+                </div>
+                <h3 className="card-title">{adv.title}</h3>
+                <div className="card-meta">
+                  <MapPin size={14} /> {adv.destination}
+                </div>
+                <div className="card-meta">
+                  <Calendar size={14} /> {adv.duration}
+                </div>
+                <p className="card-desc">{adv.description}</p>
+                <div className="card-footer">
+                  <div className="price">₹{adv.price.toLocaleString()}</div>
+                  <Link to={`/adventures/${adv._id}`} className="btn btn-primary btn-sm">
+                    View Details
+                  </Link>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
+            </div>
+          ))}
+        </div>
       </section>
 
       {/* Why Choose Us */}
@@ -148,33 +146,29 @@ const Home = () => {
           </Link>
         </div>
 
-        {loading ? (
-          <p>Loading gear...</p>
-        ) : (
-          <div className="grid-4">
-            {products.map((prod) => (
-              <div key={prod._id} className="card">
-                <img src={prod.image} alt={prod.name} className="card-img" style={{ height: '180px' }} />
-                <div className="card-body">
-                  <span className="badge badge-info" style={{ alignSelf: 'flex-start', marginBottom: '6px' }}>
-                    {prod.category}
-                  </span>
-                  <h3 className="card-title" style={{ fontSize: '16px' }}>{prod.name}</h3>
-                  <p className="card-desc" style={{ fontSize: '13px' }}>{prod.description}</p>
-                  <div className="card-footer">
-                    <div className="price">₹{prod.price.toLocaleString()}</div>
-                    <button
-                      onClick={() => handleAddToCart(prod)}
-                      className={`btn btn-sm ${addedId === prod._id ? 'btn-secondary' : 'btn-primary'}`}
-                    >
-                      {addedId === prod._id ? 'Added!' : 'Add to Cart'}
-                    </button>
-                  </div>
+        <div className="grid-4">
+          {products.map((prod) => (
+            <div key={prod._id} className="card">
+              <img src={prod.image} alt={prod.name} className="card-img" style={{ height: '180px' }} />
+              <div className="card-body">
+                <span className="badge badge-info" style={{ alignSelf: 'flex-start', marginBottom: '6px' }}>
+                  {prod.category}
+                </span>
+                <h3 className="card-title" style={{ fontSize: '16px' }}>{prod.name}</h3>
+                <p className="card-desc" style={{ fontSize: '13px' }}>{prod.description}</p>
+                <div className="card-footer">
+                  <div className="price">₹{prod.price.toLocaleString()}</div>
+                  <button
+                    onClick={() => handleAddToCart(prod)}
+                    className={`btn btn-sm ${addedId === prod._id ? 'btn-secondary' : 'btn-primary'}`}
+                  >
+                    {addedId === prod._id ? 'Added!' : 'Add to Cart'}
+                  </button>
                 </div>
               </div>
-            ))}
-          </div>
-        )}
+            </div>
+          ))}
+        </div>
       </section>
     </div>
   );

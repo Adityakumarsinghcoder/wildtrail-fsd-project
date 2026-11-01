@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { MapPin, Calendar, Search } from 'lucide-react';
 import api from '../api/client';
+import { fallbackAdventures } from '../data/fallbackData';
 
 const Adventures = () => {
-  const [adventures, setAdventures] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [adventures, setAdventures] = useState(fallbackAdventures);
+  const [loading, setLoading] = useState(false);
   const [destinationFilter, setDestinationFilter] = useState('');
   const [difficultyFilter, setDifficultyFilter] = useState('');
 
@@ -15,18 +16,30 @@ const Adventures = () => {
 
   const fetchAdventures = async () => {
     try {
-      setLoading(true);
       let url = '/adventures?';
       if (destinationFilter) url += `destination=${encodeURIComponent(destinationFilter)}&`;
       if (difficultyFilter) url += `difficulty=${encodeURIComponent(difficultyFilter)}&`;
 
       const res = await api.get(url);
-      setAdventures(res.data);
+      if (res.data && Array.isArray(res.data) && res.data.length > 0) {
+        setAdventures(res.data);
+      } else {
+        applyLocalFilter();
+      }
     } catch (err) {
-      console.error('Error fetching adventures:', err);
-    } finally {
-      setLoading(false);
+      applyLocalFilter();
     }
+  };
+
+  const applyLocalFilter = () => {
+    let filtered = [...fallbackAdventures];
+    if (destinationFilter) {
+      filtered = filtered.filter(a => a.destination.toLowerCase().includes(destinationFilter.toLowerCase()));
+    }
+    if (difficultyFilter) {
+      filtered = filtered.filter(a => a.difficulty.toLowerCase() === difficultyFilter.toLowerCase());
+    }
+    setAdventures(filtered);
   };
 
   return (
@@ -63,9 +76,7 @@ const Adventures = () => {
       </div>
 
       {/* Adventures List */}
-      {loading ? (
-        <p>Loading expeditions...</p>
-      ) : adventures.length === 0 ? (
+      {adventures.length === 0 ? (
         <div className="form-card" style={{ textAlign: 'center' }}>
           <h3>No adventures found</h3>
           <p style={{ color: '#6b7280', margin: '10px 0' }}>Try adjusting your search or filters.</p>

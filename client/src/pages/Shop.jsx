@@ -3,10 +3,11 @@ import { Link } from 'react-router-dom';
 import { Search, ShoppingBag, Check } from 'lucide-react';
 import api from '../api/client';
 import { useCart } from '../context/CartContext';
+import { fallbackProducts } from '../data/fallbackData';
 
 const Shop = () => {
-  const [products, setProducts] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [products, setProducts] = useState(fallbackProducts);
+  const [loading, setLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
   const [addedItem, setAddedItem] = useState(null);
@@ -21,18 +22,30 @@ const Shop = () => {
 
   const fetchProducts = async () => {
     try {
-      setLoading(true);
       let url = '/products?';
       if (selectedCategory !== 'All') url += `category=${encodeURIComponent(selectedCategory)}&`;
       if (searchTerm) url += `search=${encodeURIComponent(searchTerm)}&`;
 
       const res = await api.get(url);
-      setProducts(res.data);
+      if (res.data && Array.isArray(res.data) && res.data.length > 0) {
+        setProducts(res.data);
+      } else {
+        applyLocalFilter();
+      }
     } catch (err) {
-      console.error('Error fetching gear products:', err);
-    } finally {
-      setLoading(false);
+      applyLocalFilter();
     }
+  };
+
+  const applyLocalFilter = () => {
+    let filtered = [...fallbackProducts];
+    if (selectedCategory !== 'All') {
+      filtered = filtered.filter(p => p.category.toLowerCase() === selectedCategory.toLowerCase());
+    }
+    if (searchTerm) {
+      filtered = filtered.filter(p => p.name.toLowerCase().includes(searchTerm.toLowerCase()));
+    }
+    setProducts(filtered);
   };
 
   const handleAddToCart = (product) => {
@@ -77,9 +90,7 @@ const Shop = () => {
       </div>
 
       {/* Products Grid */}
-      {loading ? (
-        <p>Loading equipment...</p>
-      ) : products.length === 0 ? (
+      {products.length === 0 ? (
         <div className="form-card" style={{ textAlign: 'center' }}>
           <h3>No products found</h3>
           <p style={{ color: '#6b7280', margin: '10px 0' }}>Try searching with different terms.</p>

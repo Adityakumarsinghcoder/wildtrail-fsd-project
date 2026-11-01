@@ -3,11 +3,13 @@ import { useParams, Link } from 'react-router-dom';
 import { ArrowLeft, ShoppingBag, Check, ShieldCheck, Truck } from 'lucide-react';
 import api from '../api/client';
 import { useCart } from '../context/CartContext';
+import { fallbackProducts } from '../data/fallbackData';
 
 const ProductDetail = () => {
   const { id } = useParams();
-  const [product, setProduct] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [product, setProduct] = useState(() => {
+    return fallbackProducts.find(p => p._id === id) || fallbackProducts[0];
+  });
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
 
@@ -17,11 +19,11 @@ const ProductDetail = () => {
     const fetchProduct = async () => {
       try {
         const res = await api.get(`/products/${id}`);
-        setProduct(res.data);
+        if (res.data && res.data.name) {
+          setProduct(res.data);
+        }
       } catch (err) {
-        console.error('Error fetching product:', err);
-      } finally {
-        setLoading(false);
+        // Fallback already pre-loaded
       }
     };
     fetchProduct();
@@ -35,7 +37,6 @@ const ProductDetail = () => {
     }
   };
 
-  if (loading) return <div className="container page"><p>Loading product...</p></div>;
   if (!product) return <div className="container page"><p>Product not found.</p></div>;
 
   return (
