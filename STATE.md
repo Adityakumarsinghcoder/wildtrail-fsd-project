@@ -1,9 +1,18 @@
 # Project State: WILDTRAIL Platform (College FSD Project)
 
 ## Current Status
-- **Current Phase**: Final Verification, Low-Profile Delivery & GitHub Upload Complete
+- **Current Phase**: Deployed to Production on Vercel
 - **Date**: 2026-11-01
-- **Status**: Production-Ready, 100% Beginner-Friendly Academic MERN Stack, Pushed to GitHub
+- **Status**: Live in Production, 100% Deployed & Verified
+
+---
+
+## Production Deployment URLs
+- **Main Production URL**: [https://wildtrail-fsd-project.vercel.app](https://wildtrail-fsd-project.vercel.app)
+- **Deployment URL**: [https://wildtrail-fsd-project-qbrns3tt1-adi3-5611.vercel.app](https://wildtrail-fsd-project-qbrns3tt1-adi3-5611.vercel.app)
+- **Deployment Inspector**: [https://vercel.com/adi3-5611/wildtrail-fsd-project/4VvQH3r6g7oRERSLGN5FcGMgxCPc](https://vercel.com/adi3-5611/wildtrail-fsd-project/4VvQH3r6g7oRERSLGN5FcGMgxCPc)
+- **Vercel Project Scope**: `adi3-5611`
+- **Ready State**: `READY` (HTTP 200)
 
 ---
 
@@ -11,7 +20,6 @@
 - **URL**: [https://github.com/Adityakumarsinghcoder/wildtrail-fsd-project](https://github.com/Adityakumarsinghcoder/wildtrail-fsd-project)
 - **Branch**: `main`
 - **Owner**: `Adityakumarsinghcoder`
-- **Commit SHA**: `c80d001768a7c550e7fc242782afa4df1aa6c6e5`
 
 ---
 
@@ -19,16 +27,15 @@
 - **Frontend**: Clean React 18 (Vite 5) + React Router v6 + native hooks (`useState`, `useEffect`, `useContext`).
 - **Styling**: 100% Standard Clean CSS (`App.css`). No PostCSS, Tailwind, or complex build configurations.
 - **State Management**: Native React Context (`AuthContext`, `CartContext`) persisted in `localStorage`.
-- **Backend API**: Node.js (ES Modules) + Express.js + Mongoose.
-- **Authentication**: Standard JWT Bearer token authentication + `bcryptjs` password hashing.
-- **Database**: Local Desktop MongoDB on port 27017 (`mongodb://127.0.0.1:27017/wildtrail`) with MongoDB Compass integration.
+- **Backend API**: Node.js (ES Modules) + Express.js + Mongoose with Vercel serverless functions in `/api`.
+- **Catalog**: Embedded instant fallback catalog (`fallbackData.js`) ensuring all 6 expeditions, 6 stays, and 8 gear products render with images, prices, and interactive forms even when cloud database is offline.
 
 ---
 
-## Active Services
-- **Backend API**: Running concurrently on port 5000 (`http://localhost:5000/api/v1`).
-- **Client Application**: Running concurrently on port 5173 (`http://localhost:5173`).
-- **Database**: MongoDB running on `mongodb://127.0.0.1:27017/wildtrail`.
+## Active Local Services
+- **Backend API**: Running on port 5000 (`http://localhost:5000/api/v1`).
+- **Client Application**: Running on port 5173 (`http://localhost:5173`).
+- **Database**: Local desktop MongoDB on port 27017 (`mongodb://127.0.0.1:27017/wildtrail`).
 
 ---
 
