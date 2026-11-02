@@ -40,6 +40,11 @@
    - Dedicated toggle button in Admin portal: `🟢 Open` vs `🔴 Disabled`.
    - Disabling a sport immediately displays `🔴 Booking Closed` badges on cards and a warning banner on the detail page.
    - Prevents booking submissions when disabled.
+5. **AI Chatbot (TrailBot Assistant)**:
+   - Floating interactive assistant in bottom-right corner of all pages.
+   - Answers questions regarding expeditions, difficulty ratings, required gear, stays near trails, group person limits, and cancellation policies.
+   - Features dynamic suggestion chips, auto-scrolling message view, and conversation clearing.
+   - Supported by `POST /api/v1/chat` with integrated offline fallback so it always functions with zero external API key requirements.
 
 ---
 

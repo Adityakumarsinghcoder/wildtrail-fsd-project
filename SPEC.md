@@ -67,7 +67,7 @@ d:\.vscode\fsd project\
         ├── App.css            # Clean, modern, standard CSS
         ├── main.jsx           # App root mount
         ├── context/           # AuthContext.jsx, CartContext.jsx
-        ├── components/        # Navbar.jsx, Footer.jsx, Card.jsx, Alert.jsx
+        ├── components/        # Navbar.jsx, Footer.jsx, Chatbot.jsx
         └── pages/
             ├── Home.jsx       # Landing page (hero, highlights, categories)
             ├── Adventures.jsx # Adventure trips listing & filters

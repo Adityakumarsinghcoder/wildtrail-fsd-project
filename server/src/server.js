@@ -15,6 +15,7 @@ import stayRoutes from './routes/stayRoutes.js';
 import productRoutes from './routes/productRoutes.js';
 import bookingRoutes from './routes/bookingRoutes.js';
 import orderRoutes from './routes/orderRoutes.js';
+import chatRoutes from './routes/chatRoutes.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -40,6 +41,7 @@ app.use('/api/v1/stays', stayRoutes);
 app.use('/api/v1/products', productRoutes);
 app.use('/api/v1/bookings', bookingRoutes);
 app.use('/api/v1/orders', orderRoutes);
+app.use('/api/v1/chat', chatRoutes);
 
 // Root route
 app.get('/', (req, res) => {
