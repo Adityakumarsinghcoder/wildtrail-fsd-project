@@ -238,3 +238,4 @@ export const fallbackProducts = [
     rating: 4.9
   }
 ];
+

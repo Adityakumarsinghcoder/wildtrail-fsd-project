@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Calendar, Package, User, MapPin, AlertCircle, XCircle } from 'lucide-react';
 import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
+import { getLocalBookings, getLocalOrders, cancelLocalBooking, mergeRecords } from '../utils/userStore';
 
 const Dashboard = () => {
   const { user } = useAuth();
@@ -18,14 +19,39 @@ const Dashboard = () => {
   const fetchUserData = async () => {
     try {
       setLoading(true);
-      const [bookingsRes, ordersRes] = await Promise.all([
-        api.get('/bookings/my'),
-        api.get('/orders/my')
-      ]);
-      setBookings(bookingsRes.data);
-      setOrders(ordersRes.data);
+      let apiBookings = [];
+      let apiOrders = [];
+
+      try {
+        const bookingsRes = await api.get('/bookings/my');
+        if (Array.isArray(bookingsRes.data)) {
+          apiBookings = bookingsRes.data;
+        }
+      } catch (err) {
+        // API offline or in demo mode
+      }
+
+      try {
+        const ordersRes = await api.get('/orders/my');
+        if (Array.isArray(ordersRes.data)) {
+          apiOrders = ordersRes.data;
+        }
+      } catch (err) {
+        // API offline or in demo mode
+      }
+
+      const localBookings = getLocalBookings();
+      const localOrders = getLocalOrders();
+
+      const mergedBookings = mergeRecords(apiBookings, localBookings);
+      const mergedOrders = mergeRecords(apiOrders, localOrders);
+
+      setBookings(mergedBookings);
+      setOrders(mergedOrders);
     } catch (err) {
       console.error('Error fetching dashboard data:', err);
+      setBookings(getLocalBookings());
+      setOrders(getLocalOrders());
     } finally {
       setLoading(false);
     }
@@ -35,10 +61,12 @@ const Dashboard = () => {
     if (!window.confirm('Are you sure you want to cancel this booking?')) return;
     try {
       await api.put(`/bookings/${id}/cancel`);
+    } catch (err) {
+      console.warn('API cancel offline, cancelling in persistent local store:', err);
+    } finally {
+      cancelLocalBooking(id);
       setMessage({ type: 'success', text: 'Booking cancelled successfully' });
       fetchUserData();
-    } catch (err) {
-      setMessage({ type: 'error', text: err.response?.data?.message || 'Error cancelling booking' });
     }
   };
 
@@ -191,7 +219,7 @@ const Dashboard = () => {
                   <div>
                     <div style={{ fontSize: '12px', color: '#6b7280' }}>Order ID: {o._id}</div>
                     <div style={{ fontSize: '13px', color: '#374151', marginTop: '2px' }}>
-                      Date: {new Date(o.createdAt).toLocaleDateString()} &nbsp;|&nbsp; Payment: {o.paymentMethod}
+                      Date: {o.createdAt ? new Date(o.createdAt).toLocaleDateString() : 'Recent'} &nbsp;|&nbsp; Payment: {o.paymentMethod}
                     </div>
                   </div>
                   <div style={{ textAlign: 'right' }}>

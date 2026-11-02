@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ShieldCheck, Plus, Trash2, Calendar, Package, MapPin, Tag } from 'lucide-react';
 import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
+import { getLocalBookings, getLocalOrders, mergeRecords } from '../utils/userStore';
 
 const Admin = () => {
   const { user, isAdmin } = useAuth();
@@ -53,11 +54,19 @@ const Admin = () => {
         const res = await api.get('/products');
         setProducts(res.data);
       } else if (activeTab === 'bookings') {
-        const res = await api.get('/bookings/all');
-        setBookings(res.data);
+        let apiBookings = [];
+        try {
+          const res = await api.get('/bookings/all');
+          if (Array.isArray(res.data)) apiBookings = res.data;
+        } catch (err) {}
+        setBookings(mergeRecords(apiBookings, getLocalBookings()));
       } else if (activeTab === 'orders') {
-        const res = await api.get('/orders/all');
-        setOrders(res.data);
+        let apiOrders = [];
+        try {
+          const res = await api.get('/orders/all');
+          if (Array.isArray(res.data)) apiOrders = res.data;
+        } catch (err) {}
+        setOrders(mergeRecords(apiOrders, getLocalOrders()));
       }
     } catch (err) {
       console.error('Error loading admin data:', err);

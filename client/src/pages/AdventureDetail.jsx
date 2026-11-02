@@ -4,6 +4,7 @@ import { MapPin, Calendar, CheckCircle, ArrowLeft, Users } from 'lucide-react';
 import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { fallbackAdventures } from '../data/fallbackData';
+import { saveLocalBooking } from '../utils/userStore';
 
 const AdventureDetail = () => {
   const { id } = useParams();
@@ -53,25 +54,43 @@ const AdventureDetail = () => {
       setError('');
       const totalPrice = adventure.price * guests;
 
-      await api.post('/bookings', {
+      const localRecord = {
+        _id: `bkg_adv_${Date.now()}`,
         bookingType: 'Adventure',
         itemTitle: adventure.title,
         destination: adventure.destination,
         startDate,
         guests: Number(guests),
-        totalPrice
-      });
+        totalPrice,
+        status: 'Confirmed',
+        createdAt: new Date().toISOString()
+      };
+
+      try {
+        const res = await api.post('/bookings', {
+          bookingType: 'Adventure',
+          itemTitle: adventure.title,
+          destination: adventure.destination,
+          startDate,
+          guests: Number(guests),
+          totalPrice
+        });
+
+        if (res.data?.booking?._id) {
+          localRecord._id = res.data.booking._id;
+        }
+      } catch (apiErr) {
+        console.warn('API booking offline, saving to persistent local storage:', apiErr);
+      }
+
+      saveLocalBooking(localRecord);
 
       setSuccess('Your adventure booking is confirmed! Redirecting to Dashboard...');
       setTimeout(() => {
         navigate('/dashboard');
-      }, 1500);
+      }, 1200);
     } catch (err) {
-      // In cloud demo mode without live DB, confirm locally
-      setSuccess('Your adventure booking is confirmed! Redirecting to Dashboard...');
-      setTimeout(() => {
-        navigate('/dashboard');
-      }, 1500);
+      setError('Error creating booking. Please try again.');
     } finally {
       setBookingLoading(false);
     }

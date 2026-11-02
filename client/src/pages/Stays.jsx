@@ -4,6 +4,7 @@ import { MapPin, Search, Calendar, Users, X } from 'lucide-react';
 import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { fallbackStays } from '../data/fallbackData';
+import { saveLocalBooking } from '../utils/userStore';
 
 const Stays = () => {
   const [stays, setStays] = useState(fallbackStays);
@@ -74,27 +75,44 @@ const Stays = () => {
       setBookingLoading(true);
       const totalPrice = selectedStay.pricePerNight * guests;
 
-      await api.post('/bookings', {
+      const localRecord = {
+        _id: `bkg_stay_${Date.now()}`,
         bookingType: 'Stay',
         itemTitle: selectedStay.name,
         destination: selectedStay.destination,
         startDate,
         guests: Number(guests),
-        totalPrice
-      });
+        totalPrice,
+        status: 'Confirmed',
+        createdAt: new Date().toISOString()
+      };
+
+      try {
+        const res = await api.post('/bookings', {
+          bookingType: 'Stay',
+          itemTitle: selectedStay.name,
+          destination: selectedStay.destination,
+          startDate,
+          guests: Number(guests),
+          totalPrice
+        });
+
+        if (res.data?.booking?._id) {
+          localRecord._id = res.data.booking._id;
+        }
+      } catch (apiErr) {
+        console.warn('API stay booking offline, saving to persistent local storage:', apiErr);
+      }
+
+      saveLocalBooking(localRecord);
 
       setBookingMessage({ type: 'success', text: 'Stay reservation confirmed! Redirecting to Dashboard...' });
       setTimeout(() => {
         setSelectedStay(null);
         navigate('/dashboard');
-      }, 1500);
+      }, 1200);
     } catch (err) {
-      // In cloud demo mode without live DB, confirm locally
-      setBookingMessage({ type: 'success', text: 'Stay reservation confirmed! Redirecting to Dashboard...' });
-      setTimeout(() => {
-        setSelectedStay(null);
-        navigate('/dashboard');
-      }, 1500);
+      setBookingMessage({ type: 'error', text: 'Could not complete reservation. Please try again.' });
     } finally {
       setBookingLoading(false);
     }

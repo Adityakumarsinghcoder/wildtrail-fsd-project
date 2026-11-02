@@ -4,6 +4,7 @@ import { ArrowLeft, CheckCircle, ShieldCheck } from 'lucide-react';
 import api from '../api/client';
 import { useCart } from '../context/CartContext';
 import { useAuth } from '../context/AuthContext';
+import { saveLocalOrder } from '../utils/userStore';
 
 const Checkout = () => {
   const { cartItems, totalAmount, clearCart } = useCart();
@@ -56,11 +57,27 @@ const Checkout = () => {
         paymentMethod: formData.paymentMethod
       };
 
-      const res = await api.post('/orders', orderPayload);
+      const localOrder = {
+        _id: `ord_${Date.now()}`,
+        ...orderPayload,
+        status: 'Placed',
+        createdAt: new Date().toISOString()
+      };
+
+      try {
+        const res = await api.post('/orders', orderPayload);
+        if (res.data?.order?._id) {
+          localOrder._id = res.data.order._id;
+        }
+      } catch (apiErr) {
+        console.warn('API order offline, saving to persistent local storage:', apiErr);
+      }
+
+      saveLocalOrder(localOrder);
       clearCart();
-      navigate(`/order-success/${res.data.order._id}`);
+      navigate(`/order-success/${localOrder._id}`);
     } catch (err) {
-      setError(err.response?.data?.message || 'Error placing order');
+      setError('Error placing order. Please try again.');
     } finally {
       setLoading(false);
     }
