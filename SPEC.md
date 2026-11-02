@@ -101,7 +101,9 @@ d:\.vscode\fsd project\
    - `sport`: String (Trekking, Rafting, Mountaineering, Paragliding, Skiing)
    - `difficulty`: String ('Easy', 'Moderate', 'Hard', 'Extreme')
    - `duration`: String (e.g. '4 Days / 3 Nights')
-   - `price`: Number, required
+   - `price`: Number, required (Adjustable by Admin)
+   - `personLimit`: Number, default 12 (Maximum capacity per group)
+   - `isBookingEnabled`: Boolean, default true (Admin enable/disable booking switch)
    - `image`: String
    - `description`: String
    - `highlights`: [String]

@@ -3,10 +3,10 @@ import { Link } from 'react-router-dom';
 import { Search, ShoppingBag, Check } from 'lucide-react';
 import api from '../api/client';
 import { useCart } from '../context/CartContext';
-import { fallbackProducts } from '../data/fallbackData';
+import { getMergedProducts } from '../utils/userStore';
 
 const Shop = () => {
-  const [products, setProducts] = useState(fallbackProducts);
+  const [products, setProducts] = useState(() => getMergedProducts());
   const [loading, setLoading] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('All');
   const [searchTerm, setSearchTerm] = useState('');
@@ -14,7 +14,7 @@ const Shop = () => {
 
   const { addToCart } = useCart();
 
-  const categories = ['All', 'Trekking', 'Camping', 'Climbing'];
+  const categories = ['All', 'Trekking', 'Camping', 'Climbing', 'Apparel'];
 
   useEffect(() => {
     fetchProducts();
@@ -27,18 +27,15 @@ const Shop = () => {
       if (searchTerm) url += `search=${encodeURIComponent(searchTerm)}&`;
 
       const res = await api.get(url);
-      if (res.data && Array.isArray(res.data) && res.data.length > 0) {
-        setProducts(res.data);
-      } else {
-        applyLocalFilter();
-      }
+      const merged = getMergedProducts(Array.isArray(res.data) ? res.data : []);
+      applyFilterToData(merged);
     } catch (err) {
-      applyLocalFilter();
+      applyFilterToData(getMergedProducts());
     }
   };
 
-  const applyLocalFilter = () => {
-    let filtered = [...fallbackProducts];
+  const applyFilterToData = (list) => {
+    let filtered = [...list];
     if (selectedCategory !== 'All') {
       filtered = filtered.filter(p => p.category.toLowerCase() === selectedCategory.toLowerCase());
     }
@@ -58,18 +55,18 @@ const Shop = () => {
     <div className="container page">
       <div className="section-header">
         <div>
-          <h2>Technical Outdoor & Trekking Gear</h2>
-          <p>Field-tested rucksacks, alpine sleeping bags, tents and boots ready for high altitudes</p>
+          <h2>Technical Gear Shop</h2>
+          <p>Field-tested expedition equipment engineered for alpine conditions</p>
         </div>
       </div>
 
-      {/* Filter and Category Bar */}
+      {/* Filter and Search */}
       <div className="filter-bar">
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: '240px' }}>
           <Search size={18} color="#6b7280" />
           <input
             type="text"
-            placeholder="Search equipment by name..."
+            placeholder="Search gear by name..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             style={{ width: '100%' }}
@@ -92,8 +89,8 @@ const Shop = () => {
       {/* Products Grid */}
       {products.length === 0 ? (
         <div className="form-card" style={{ textAlign: 'center' }}>
-          <h3>No products found</h3>
-          <p style={{ color: '#6b7280', margin: '10px 0' }}>Try searching with different terms.</p>
+          <h3>No equipment found</h3>
+          <p style={{ color: '#6b7280', margin: '10px 0' }}>Try searching with a different keyword or category.</p>
           <button
             onClick={() => {
               setSelectedCategory('All');
@@ -108,30 +105,24 @@ const Shop = () => {
         <div className="grid-4">
           {products.map((product) => (
             <div key={product._id} className="card">
-              <Link to={`/shop/${product._id}`}>
-                <img src={product.image} alt={product.name} className="card-img" style={{ height: '180px' }} />
-              </Link>
+              <img src={product.image} alt={product.name} className="card-img" />
               <div className="card-body">
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '6px' }}>
-                  <span className="badge badge-info">{product.category}</span>
-                  <span style={{ fontSize: '12px', color: '#6b7280' }}>{product.brand}</span>
+                <span className="badge badge-info" style={{ marginBottom: '6px' }}>{product.category}</span>
+                <h4 style={{ fontSize: '15px', fontWeight: '700', margin: '6px 0 10px', height: '40px', overflow: 'hidden' }}>
+                  {product.name}
+                </h4>
+                <div style={{ fontSize: '12px', color: '#6b7280', marginBottom: '12px' }}>
+                  Brand: {product.brand || 'Wildtrail'} &nbsp;|&nbsp; Stock: {product.stock}
                 </div>
-
-                <Link to={`/shop/${product._id}`}>
-                  <h3 className="card-title" style={{ fontSize: '16px' }}>{product.name}</h3>
-                </Link>
-
-                <p className="card-desc" style={{ fontSize: '13px' }}>{product.description}</p>
-
                 <div className="card-footer">
                   <div className="price">₹{product.price.toLocaleString()}</div>
                   <button
                     onClick={() => handleAddToCart(product)}
-                    className={`btn btn-sm ${addedItem === product._id ? 'btn-secondary' : 'btn-primary'}`}
+                    className="btn btn-primary btn-sm"
                   >
                     {addedItem === product._id ? (
                       <>
-                        <Check size={14} /> Added
+                        <Check size={14} /> Added!
                       </>
                     ) : (
                       <>

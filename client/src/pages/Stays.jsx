@@ -4,10 +4,10 @@ import { MapPin, Search, Calendar, Users, X } from 'lucide-react';
 import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { fallbackStays } from '../data/fallbackData';
-import { saveLocalBooking } from '../utils/userStore';
+import { saveLocalBooking, getMergedStays } from '../utils/userStore';
 
 const Stays = () => {
-  const [stays, setStays] = useState(fallbackStays);
+  const [stays, setStays] = useState(() => getMergedStays());
   const [loading, setLoading] = useState(false);
   const [destinationFilter, setDestinationFilter] = useState('');
   const [typeFilter, setTypeFilter] = useState('');
@@ -33,18 +33,15 @@ const Stays = () => {
       if (typeFilter) url += `type=${encodeURIComponent(typeFilter)}&`;
 
       const res = await api.get(url);
-      if (res.data && Array.isArray(res.data) && res.data.length > 0) {
-        setStays(res.data);
-      } else {
-        applyLocalFilter();
-      }
+      const merged = getMergedStays(Array.isArray(res.data) ? res.data : []);
+      applyFilterToData(merged);
     } catch (err) {
-      applyLocalFilter();
+      applyFilterToData(getMergedStays());
     }
   };
 
-  const applyLocalFilter = () => {
-    let filtered = [...fallbackStays];
+  const applyFilterToData = (list) => {
+    let filtered = [...list];
     if (destinationFilter) {
       filtered = filtered.filter(s => s.destination.toLowerCase().includes(destinationFilter.toLowerCase()));
     }

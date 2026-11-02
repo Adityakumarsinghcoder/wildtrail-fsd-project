@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { MapPin, Calendar, Search } from 'lucide-react';
+import { MapPin, Calendar, Search, Users, AlertCircle } from 'lucide-react';
 import api from '../api/client';
-import { fallbackAdventures } from '../data/fallbackData';
+import { getMergedAdventures } from '../utils/userStore';
 
 const Adventures = () => {
-  const [adventures, setAdventures] = useState(fallbackAdventures);
+  const [adventures, setAdventures] = useState(() => getMergedAdventures());
   const [loading, setLoading] = useState(false);
   const [destinationFilter, setDestinationFilter] = useState('');
   const [difficultyFilter, setDifficultyFilter] = useState('');
@@ -21,18 +21,15 @@ const Adventures = () => {
       if (difficultyFilter) url += `difficulty=${encodeURIComponent(difficultyFilter)}&`;
 
       const res = await api.get(url);
-      if (res.data && Array.isArray(res.data) && res.data.length > 0) {
-        setAdventures(res.data);
-      } else {
-        applyLocalFilter();
-      }
+      const merged = getMergedAdventures(Array.isArray(res.data) ? res.data : []);
+      applyFilterToData(merged);
     } catch (err) {
-      applyLocalFilter();
+      applyFilterToData(getMergedAdventures());
     }
   };
 
-  const applyLocalFilter = () => {
-    let filtered = [...fallbackAdventures];
+  const applyFilterToData = (list) => {
+    let filtered = [...list];
     if (destinationFilter) {
       filtered = filtered.filter(a => a.destination.toLowerCase().includes(destinationFilter.toLowerCase()));
     }
@@ -96,24 +93,34 @@ const Adventures = () => {
             <div key={adv._id} className="card">
               <img src={adv.image} alt={adv.title} className="card-img" />
               <div className="card-body">
-                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '8px', flexWrap: 'wrap', gap: '4px' }}>
                   <span className="badge badge-info">{adv.sport}</span>
-                  <span className={`badge ${adv.difficulty === 'Extreme' ? 'badge-warning' : 'badge-success'}`}>
-                    {adv.difficulty}
-                  </span>
+                  {adv.isBookingEnabled === false ? (
+                    <span className="badge" style={{ background: '#fee2e2', color: '#dc2626', border: '1px solid #fca5a5' }}>
+                      🔴 Booking Closed
+                    </span>
+                  ) : (
+                    <span className={`badge ${adv.difficulty === 'Extreme' ? 'badge-warning' : 'badge-success'}`}>
+                      {adv.difficulty}
+                    </span>
+                  )}
                 </div>
                 <h3 className="card-title">{adv.title}</h3>
                 <div className="card-meta">
                   <MapPin size={14} /> {adv.destination}
                 </div>
                 <div className="card-meta">
-                  <Calendar size={14} /> {adv.duration}
+                  <Calendar size={14} /> {adv.duration} &nbsp;|&nbsp;
+                  <Users size={14} /> Max: {adv.personLimit || 12} Persons
                 </div>
                 <p className="card-desc">{adv.description}</p>
                 <div className="card-footer">
                   <div className="price">₹{adv.price.toLocaleString()}</div>
-                  <Link to={`/adventures/${adv._id}`} className="btn btn-primary btn-sm">
-                    View Details
+                  <Link
+                    to={`/adventures/${adv._id}`}
+                    className={`btn btn-sm ${adv.isBookingEnabled === false ? 'btn-outline' : 'btn-primary'}`}
+                  >
+                    {adv.isBookingEnabled === false ? 'View (Closed)' : 'View Details'}
                   </Link>
                 </div>
               </div>

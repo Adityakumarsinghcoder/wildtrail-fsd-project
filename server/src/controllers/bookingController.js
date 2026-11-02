@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import { Booking } from '../models/Booking.js';
+import { Adventure } from '../models/Adventure.js';
 
 let memoryBookings = [];
 
@@ -11,13 +12,30 @@ export const createBooking = async (req, res) => {
       return res.status(400).json({ message: 'Missing required booking details' });
     }
 
+    const numGuests = Number(guests) || 1;
+
+    // Check if this is an adventure booking and enforce person limit & enable status
+    if (bookingType === 'Adventure') {
+      if (mongoose.connection.readyState === 1) {
+        const adv = await Adventure.findOne({ title: itemTitle });
+        if (adv) {
+          if (adv.isBookingEnabled === false) {
+            return res.status(400).json({ message: 'Bookings for this sport/expedition are currently disabled by the administrator.' });
+          }
+          if (adv.personLimit && numGuests > adv.personLimit) {
+            return res.status(400).json({ message: `Number of guests exceeds the person limit of ${adv.personLimit} for this adventure.` });
+          }
+        }
+      }
+    }
+
     const bookingData = {
       user: req.user._id,
       bookingType,
       itemTitle,
       destination: destination || '',
       startDate,
-      guests: Number(guests) || 1,
+      guests: numGuests,
       totalPrice: Number(totalPrice),
       status: 'Confirmed'
     };

@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import { Product } from '../models/Product.js';
 
-const sampleProducts = [
+let sampleProducts = [
   {
     _id: "prod1",
     name: 'Wildtrail Everest 65L Expedition Rucksack',
@@ -154,9 +154,44 @@ export const createProduct = async (req, res) => {
       return res.status(201).json(product);
     }
 
-    res.status(201).json({ _id: `prod_${Date.now()}`, ...req.body });
+    const newProd = {
+      _id: `prod_${Date.now()}`,
+      name,
+      category,
+      price: Number(price),
+      stock: Number(stock) || 10,
+      image: image || 'https://images.unsplash.com/photo-1544816155-12df9643f363?auto=format&fit=crop&w=800&q=80',
+      description: description || '',
+      brand: brand || 'Wildtrail',
+      rating: 4.8
+    };
+    sampleProducts.unshift(newProd);
+    res.status(201).json(newProd);
   } catch (error) {
     res.status(500).json({ message: 'Error creating product', error: error.message });
+  }
+};
+
+export const updateProduct = async (req, res) => {
+  try {
+    const updates = { ...req.body };
+    if (updates.price !== undefined) updates.price = Number(updates.price);
+    if (updates.stock !== undefined) updates.stock = Number(updates.stock);
+
+    if (mongoose.connection.readyState === 1) {
+      const updated = await Product.findByIdAndUpdate(req.params.id, updates, { new: true });
+      if (updated) return res.json(updated);
+    }
+
+    const index = sampleProducts.findIndex(p => p._id === req.params.id);
+    if (index >= 0) {
+      sampleProducts[index] = { ...sampleProducts[index], ...updates };
+      return res.json(sampleProducts[index]);
+    }
+
+    res.json({ _id: req.params.id, ...updates });
+  } catch (error) {
+    res.status(500).json({ message: 'Error updating product', error: error.message });
   }
 };
 
@@ -165,6 +200,7 @@ export const deleteProduct = async (req, res) => {
     if (mongoose.connection.readyState === 1) {
       await Product.findByIdAndDelete(req.params.id);
     }
+    sampleProducts = sampleProducts.filter(p => p._id !== req.params.id);
     res.json({ message: 'Product deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: 'Error deleting product' });

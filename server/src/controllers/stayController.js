@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import { Stay } from '../models/Stay.js';
 
-const sampleStays = [
+let sampleStays = [
   {
     _id: "stay1",
     name: 'Solang Valley Alpine Campsite',
@@ -133,9 +133,44 @@ export const createStay = async (req, res) => {
       return res.status(201).json(stay);
     }
 
-    res.status(201).json({ _id: `stay_${Date.now()}`, ...req.body });
+    const newStay = {
+      _id: `stay_${Date.now()}`,
+      name,
+      destination,
+      type: type || 'Resort',
+      pricePerNight: Number(pricePerNight),
+      rating: Number(rating) || 4.5,
+      image: image || 'https://images.unsplash.com/photo-1542314831-068cd1dbfeeb?auto=format&fit=crop&w=1200&q=80',
+      amenities: amenities || ['Free Wi-Fi', 'Campfire', 'Hot Water', 'Mountain View'],
+      description: description || ''
+    };
+    sampleStays.unshift(newStay);
+    res.status(201).json(newStay);
   } catch (error) {
     res.status(500).json({ message: 'Error creating stay', error: error.message });
+  }
+};
+
+export const updateStay = async (req, res) => {
+  try {
+    const updates = { ...req.body };
+    if (updates.pricePerNight !== undefined) updates.pricePerNight = Number(updates.pricePerNight);
+    if (updates.rating !== undefined) updates.rating = Number(updates.rating);
+
+    if (mongoose.connection.readyState === 1) {
+      const updated = await Stay.findByIdAndUpdate(req.params.id, updates, { new: true });
+      if (updated) return res.json(updated);
+    }
+
+    const index = sampleStays.findIndex(s => s._id === req.params.id);
+    if (index >= 0) {
+      sampleStays[index] = { ...sampleStays[index], ...updates };
+      return res.json(sampleStays[index]);
+    }
+
+    res.json({ _id: req.params.id, ...updates });
+  } catch (error) {
+    res.status(500).json({ message: 'Error updating stay', error: error.message });
   }
 };
 
@@ -144,6 +179,7 @@ export const deleteStay = async (req, res) => {
     if (mongoose.connection.readyState === 1) {
       await Stay.findByIdAndDelete(req.params.id);
     }
+    sampleStays = sampleStays.filter(s => s._id !== req.params.id);
     res.json({ message: 'Stay deleted successfully' });
   } catch (error) {
     res.status(500).json({ message: 'Error deleting stay' });

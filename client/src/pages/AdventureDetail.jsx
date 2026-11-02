@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import { MapPin, Calendar, CheckCircle, ArrowLeft, Users } from 'lucide-react';
+import { MapPin, Calendar, CheckCircle, ArrowLeft, Users, AlertCircle } from 'lucide-react';
 import api from '../api/client';
 import { useAuth } from '../context/AuthContext';
 import { fallbackAdventures } from '../data/fallbackData';
-import { saveLocalBooking } from '../utils/userStore';
+import { saveLocalBooking, getMergedAdventures } from '../utils/userStore';
 
 const AdventureDetail = () => {
   const { id } = useParams();
@@ -12,7 +12,8 @@ const AdventureDetail = () => {
   const { isAuthenticated } = useAuth();
 
   const [adventure, setAdventure] = useState(() => {
-    return fallbackAdventures.find(a => a._id === id) || fallbackAdventures[0];
+    const list = getMergedAdventures();
+    return list.find(a => a._id === id) || fallbackAdventures[0];
   });
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -26,15 +27,22 @@ const AdventureDetail = () => {
     const fetchAdventure = async () => {
       try {
         const res = await api.get(`/adventures/${id}`);
-        if (res.data && res.data.title) {
-          setAdventure(res.data);
+        const mergedList = getMergedAdventures(res.data ? [res.data] : []);
+        const found = mergedList.find(a => a._id === id);
+        if (found) {
+          setAdventure(found);
         }
       } catch (err) {
-        // Fallback already pre-loaded
+        const mergedList = getMergedAdventures();
+        const found = mergedList.find(a => a._id === id);
+        if (found) setAdventure(found);
       }
     };
     fetchAdventure();
   }, [id]);
+
+  const personLimit = adventure.personLimit || 12;
+  const isBookingClosed = adventure.isBookingEnabled === false;
 
   const handleBooking = async (e) => {
     e.preventDefault();
@@ -44,8 +52,18 @@ const AdventureDetail = () => {
       return;
     }
 
+    if (isBookingClosed) {
+      setError('Bookings for this sport/expedition are currently closed by the administrator.');
+      return;
+    }
+
     if (!startDate) {
       setError('Please select a starting date for your trip');
+      return;
+    }
+
+    if (Number(guests) > personLimit) {
+      setError(`Cannot book for ${guests} guests. Maximum group limit is ${personLimit} persons.`);
       return;
     }
 
@@ -107,6 +125,15 @@ const AdventureDetail = () => {
       {error && <div className="alert alert-error">{error}</div>}
       {success && <div className="alert alert-success">{success}</div>}
 
+      {isBookingClosed && (
+        <div className="alert alert-warning" style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '20px' }}>
+          <AlertCircle size={20} color="#b45309" />
+          <div>
+            <strong>Booking Currently Closed:</strong> The administrator has temporarily disabled reservations for this sport/expedition.
+          </div>
+        </div>
+      )}
+
       <div className="grid-2">
         {/* Left: Details */}
         <div>
@@ -116,10 +143,15 @@ const AdventureDetail = () => {
             style={{ width: '100%', height: '380px', objectFit: 'cover', borderRadius: '8px', marginBottom: '20px' }}
           />
 
-          <div style={{ display: 'flex', gap: '10px', marginBottom: '12px' }}>
+          <div style={{ display: 'flex', gap: '10px', marginBottom: '12px', flexWrap: 'wrap' }}>
             <span className="badge badge-info">{adventure.sport}</span>
             <span className="badge badge-warning">{adventure.difficulty} Difficulty</span>
             <span className="badge badge-success">⭐ {adventure.rating} / 5</span>
+            {isBookingClosed ? (
+              <span className="badge" style={{ background: '#fee2e2', color: '#dc2626' }}>🔴 Booking Closed</span>
+            ) : (
+              <span className="badge badge-success">🟢 Booking Open</span>
+            )}
           </div>
 
           <h1 style={{ fontSize: '28px', fontWeight: '800', marginBottom: '10px' }}>
@@ -128,7 +160,8 @@ const AdventureDetail = () => {
 
           <div className="card-meta" style={{ fontSize: '15px', marginBottom: '16px' }}>
             <MapPin size={16} /> {adventure.destination} &nbsp;|&nbsp;
-            <Calendar size={16} /> {adventure.duration}
+            <Calendar size={16} /> {adventure.duration} &nbsp;|&nbsp;
+            <Users size={16} /> Max Group Limit: <strong>{personLimit} Persons</strong>
           </div>
 
           <div style={{ background: '#fff', padding: '20px', borderRadius: '8px', border: '1px solid #e5e7eb', marginBottom: '24px' }}>
@@ -155,7 +188,7 @@ const AdventureDetail = () => {
           <div className="form-card" style={{ maxWidth: '100%' }}>
             <h2 style={{ fontSize: '22px', marginBottom: '6px' }}>Book This Expedition</h2>
             <p style={{ color: '#6b7280', fontSize: '14px', marginBottom: '20px' }}>
-              Reserve your spot with instant booking confirmation.
+              {isBookingClosed ? 'Bookings are temporarily suspended by admin.' : 'Reserve your spot with instant booking confirmation.'}
             </p>
 
             <div style={{ background: '#f3f4f6', padding: '16px', borderRadius: '8px', marginBottom: '20px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -163,7 +196,7 @@ const AdventureDetail = () => {
                 <span style={{ fontSize: '13px', color: '#6b7280' }}>Price per person</span>
                 <div className="price" style={{ fontSize: '22px' }}>₹{adventure.price.toLocaleString()}</div>
               </div>
-              <span className="badge badge-info">Standard Departure</span>
+              <span className="badge badge-info">Capacity: {personLimit} max</span>
             </div>
 
             <form onSubmit={handleBooking}>
@@ -178,6 +211,7 @@ const AdventureDetail = () => {
                   value={startDate}
                   min={new Date().toISOString().split('T')[0]}
                   onChange={(e) => setStartDate(e.target.value)}
+                  disabled={isBookingClosed}
                   required
                 />
               </div>
@@ -185,16 +219,17 @@ const AdventureDetail = () => {
               <div className="form-group">
                 <label className="form-label">
                   <Users size={14} style={{ display: 'inline', marginRight: '4px' }} />
-                  Number of Explorers / Guests
+                  Number of Explorers / Guests (Limit: {personLimit})
                 </label>
                 <select
                   className="form-control"
                   value={guests}
                   onChange={(e) => setGuests(Number(e.target.value))}
+                  disabled={isBookingClosed}
                 >
-                  {[1, 2, 3, 4, 5, 6, 8, 10].map((num) => (
+                  {Array.from({ length: personLimit }, (_, i) => i + 1).map((num) => (
                     <option key={num} value={num}>
-                      {num} {num === 1 ? 'Guest' : 'Guests'}
+                      {num} {num === 1 ? 'Person' : 'Persons'}
                     </option>
                   ))}
                 </select>
@@ -211,13 +246,24 @@ const AdventureDetail = () => {
                 </div>
               </div>
 
-              <button
-                type="submit"
-                className="btn btn-primary btn-block"
-                disabled={bookingLoading}
-              >
-                {bookingLoading ? 'Confirming...' : 'Confirm Expedition Booking'}
-              </button>
+              {isBookingClosed ? (
+                <button
+                  type="button"
+                  disabled
+                  className="btn btn-block"
+                  style={{ background: '#fee2e2', color: '#dc2626', border: '1px solid #fca5a5', cursor: 'not-allowed' }}
+                >
+                  🔴 Booking Closed by Admin
+                </button>
+              ) : (
+                <button
+                  type="submit"
+                  className="btn btn-primary btn-block"
+                  disabled={bookingLoading}
+                >
+                  {bookingLoading ? 'Confirming...' : 'Confirm Expedition Booking'}
+                </button>
+              )}
 
               <p style={{ fontSize: '12px', color: '#6b7280', textAlign: 'center', marginTop: '12px' }}>
                 Free cancellation up to 72 hours before the start date.
